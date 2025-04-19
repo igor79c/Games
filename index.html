@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Subtraction & Division Game for Valentino & Mia</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url('pr.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+    }
+    #difficultyContainer {
+      text-align: center;
+      padding-top: 100px;
+    }
+    .difficultyButton {
+      width: 200px;
+      height: 80px;
+      font-size: 28px;
+      font-weight: bold;
+      margin: 20px;
+      cursor: pointer;
+    }
+    #container {
+      display: none;
+      text-align: center;
+      padding-top: 20px;
+    }
+    #topLabel {
+      font-size: 64px;
+      font-weight: bold;
+      color: black;
+      margin-bottom: 20px;
+    }
+    #leaderboard, #scoreDisplay {
+      display: none;
+      font-size: 32px;
+      font-weight: bold;
+      background: rgba(255,255,255,0.7);
+      margin: 20px auto;
+      padding: 10px;
+      width: 300px;
+      border-radius: 10px;
+    }
+    #timerDisplay {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    #questionButton {
+      width: 300px;
+      height: 150px;
+      font-size: 64px;
+      font-weight: bold;
+      color: red;
+      background: black;
+      border: 2px solid red;
+      margin-bottom: 20px;
+    }
+    #answers {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .answerButton {
+      width: 150px;
+      height: 100px;
+      font-size: 64px;
+      font-weight: bold;
+      background: orange;
+      color: black;
+      border: none;
+      cursor: pointer;
+    }
+    #divisionUI {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+      margin-left: 150px;
+    }
+    .divisionBox {
+      display: inline-block;
+      position: relative;
+      padding: 10px;
+    }
+    .quotient-input {
+      display: flex;
+      justify-content: center;
+      gap: 26px;
+      margin-bottom: 5px;
+      margin-left: 47px;
+    }
+    .quotient-input input {
+      width: 40px;
+      font-size: 28px;
+      text-align: center;
+    }
+    .divisionBar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin: 10px 0 5px 0;
+    }
+    .divisionBar span {
+      font-size: 36px;
+      font-weight: bold;
+      margin-right: 4px;
+    }
+    .divisionBar input {
+      width: 70px;
+      font-size: 32px;
+      font-weight: bold;
+      text-align: center;
+      border: none;
+      border-top: 4px solid black;
+      background: transparent;
+      pointer-events: none;
+    }
+    .remainder-display {
+      display: flex;
+      justify-content: center;
+      gap: 38px;
+      margin-top: -45px;
+      margin-left: 45px;
+    }
+    .remainder-display input {
+      width: 20px;
+      font-size: 20px;
+      text-align: center;
+      color: red;
+      background: rgba(255,255,255,0.8);
+    }
+    #submitDivision {
+      font-size: 24px;
+      padding: 10px 20px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+    #feedback {
+      font-size: 24px;
+      margin-top: 20px;
+    }
+    #startAgainButton {
+      display: none;
+      width: 200px;
+      height: 60px;
+      font-size: 28px;
+      font-weight: bold;
+      background: green;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="difficultyContainer">
+    <button id="easyButton" class="difficultyButton">Easy Sub</button>
+    <button id="hardButton" class="difficultyButton">Hard Sub</button>
+    <button id="easyBondsButton" class="difficultyButton">Easy Bonds</button>
+    <button id="hardBondsButton" class="difficultyButton">Hard Bonds</button>
+    <button id="divisionButton" class="difficultyButton">Division</button>
+  </div>
+
+  <div id="container">
+    <div id="topLabel">VALENTINO CRACK ON !!</div>
+    <div id="leaderboard"></div>
+    <div id="timerDisplay">Time: 0 seconds</div>
+
+    <button id="questionButton" disabled></button>
+    <div id="scoreDisplay"></div>
+    <div id="answers">
+      <button class="answerButton" id="answer1"></button>
+      <button class="answerButton" id="answer2"></button>
+      <button class="answerButton" id="answer3"></button>
+    </div>
+
+    <div id="divisionUI">
+      <div class="divisionBox">
+        <div class="quotient-input" id="quotientInputs"></div>
+        <div class="divisionBar" id="divisionText"></div>
+        <div class="remainder-display" id="remainderDisplay"></div>
+      </div>
+      <button id="submitDivision">Submit</button>
+      <div id="feedback"></div>
+    </div>
+
+    <button id="startAgainButton">Start Again</button>
+    <audio id="wrongSound" src="wrong.wav"></audio>
+
+    <script>
+      let mode = null;
+      let qCount = 0, totalCorrect = 0, totalWrong = 0;
+      let divisionIndex = 0, divisionCorrect = 0, divisionWrong = 0;
+      const totalQuestions = 12;
+      const totalDivisions = 7;
+      let currentCorrect = null;
+      let divisor = 0, dividend = 0, correctQuotient = "";
+      let startTime = null, timerInt = null;
+      
+      const wrong = document.getElementById("wrongSound");
+      const quotientInputs = document.getElementById("quotientInputs");
+      const remainderDisplay = document.getElementById("remainderDisplay");
+      const divisionText = document.getElementById("divisionText");
+
+      function getValidDivision() {
+        while (true) {
+          divisor = Math.floor(Math.random() * 8) + 2;
+          const q = Math.floor(Math.random() * 90) + 10;
+          const d = divisor * q;
+          if (d % divisor === 0) {
+            dividend = d;
+            correctQuotient = String(q).padStart(String(d).length, "0");
+            break;
+          }
+        }
+      }
+
+      function generateDivision() {
+        getValidDivision();
+        quotientInputs.innerHTML = "";
+        remainderDisplay.innerHTML = "";
+        divisionText.innerHTML = "";
+
+        for (let i = 0; i < correctQuotient.length; i++) {
+          const input = document.createElement("input");
+          input.maxLength = 1;
+          input.placeholder = "0";
+          quotientInputs.appendChild(input);
+        }
+
+        const span = document.createElement("span");
+        span.textContent = `${divisor} |`;
+        divisionText.appendChild(span);
+
+        const digits = String(dividend).split("");
+        digits.forEach((d, i) => {
+          const box = document.createElement("input");
+          box.value = d;
+          box.readOnly = true;
+          box.className = "division-digit";
+          divisionText.appendChild(box);
+
+          if (i < digits.length - 1) {
+            const rem = document.createElement("input");
+            rem.maxLength = 1;
+            rem.placeholder = "";
+            remainderDisplay.appendChild(rem);
+          }
+        });
+      }
+
+      document.getElementById("submitDivision").addEventListener("click", () => {
+        const userQuotient = [...quotientInputs.querySelectorAll("input")].map(i => i.value || "0").join("");
+        if (parseInt(userQuotient, 10) === parseInt(correctQuotient, 10)) {
+          divisionCorrect++;
+          document.getElementById("feedback").textContent = "✅ Correct!";
+          document.getElementById("feedback").style.color = "green";
+          setTimeout(() => {
+            document.getElementById("feedback").textContent = "";
+            divisionIndex++;
+            if (divisionIndex < totalDivisions) {
+              generateDivision();
+            } else {
+              finishGame();
+            }
+          }, 1000);
+        } else {
+          divisionWrong++;
+          wrong.currentTime = 0;
+          wrong.play();
+          document.getElementById("feedback").textContent = `❌ Wrong. Try again.`;
+          document.getElementById("feedback").style.color = "red";
+        }
+      });
+
+      function startTimer() {
+        startTime = Date.now();
+        timerInt = setInterval(() => {
+          const s = Math.floor((Date.now() - startTime) / 1000);
+          document.getElementById("timerDisplay").textContent = `Time: ${s} seconds`;
+        }, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInt);
+      }
+
+      function finishGame() {
+        stopTimer();
+        const t = Math.floor((Date.now() - startTime) / 1000);
+        const correct = mode === "division" ? divisionCorrect : totalCorrect;
+        const wrongs = mode === "division" ? divisionWrong : totalWrong;
+        const msg = `${wrongs === 0 ? '<strong>Perfect Run!</strong><br>' : '<strong>Not Perfect</strong><br>'}Time: ${t} sec<br>Correct: ${correct}<br>Wrong: ${wrongs}`;
+        document.getElementById("scoreDisplay").innerHTML = msg;
+        document.getElementById("scoreDisplay").style.display = "block";
+        document.getElementById("startAgainButton").style.display = "inline-block";
+      }
+
+      document.getElementById("startAgainButton").addEventListener("click", () => {
+        qCount = 0; totalCorrect = 0; totalWrong = 0;
+        divisionIndex = 0; divisionCorrect = 0; divisionWrong = 0;
+        document.getElementById("scoreDisplay").style.display = "none";
+        document.getElementById("startAgainButton").style.display = "none";
+        if (mode === "division") {
+          document.getElementById("divisionUI").style.display = "block";
+          document.getElementById("questionButton").style.display = "none";
+          document.querySelectorAll(".answerButton").forEach(b => b.style.display = "none");
+          document.getElementById("topLabel").textContent = "MIA CRACK ON !!";
+          document.body.style.backgroundImage = "url('go.jpg')";
+          generateDivision();
+        } else {
+          document.getElementById("divisionUI").style.display = "none";
+          document.getElementById("questionButton").style.display = "inline-block";
+          document.querySelectorAll(".answerButton").forEach(b => b.style.display = "inline-block");
+          document.getElementById("topLabel").textContent = "VALENTINO CRACK ON !!";
+          document.body.style.backgroundImage = "url('pr.jpg')";
+          generateQuestion();
+        }
+        startTimer();
+      });
+
+      const modes = ["easy", "hard", "easyBonds", "hardBonds", "division"];
+      modes.forEach(m => {
+        document.getElementById(m + "Button").addEventListener("click", () => {
+          mode = m;
+          document.getElementById("difficultyContainer").style.display = "none";
+          document.getElementById("container").style.display = "block";
+          if (m === "division") {
+            document.getElementById("divisionUI").style.display = "block";
+            document.getElementById("questionButton").style.display = "none";
+            document.querySelectorAll(".answerButton").forEach(b => b.style.display = "none");
+            document.getElementById("topLabel").textContent = "MIA CRACK ON !!";
+            document.body.style.backgroundImage = "url('go.jpg')";
+            generateDivision();
+          } else {
+            document.getElementById("divisionUI").style.display = "none";
+            document.getElementById("questionButton").style.display = "inline-block";
+            document.querySelectorAll(".answerButton").forEach(b => b.style.display = "inline-block");
+            document.getElementById("topLabel").textContent = "VALENTINO CRACK ON !!";
+            document.body.style.backgroundImage = "url('pr.jpg')";
+            generateQuestion();
+          }
+          startTimer();
+        });
+      });
+
+      function generateQuestion() {
+        if (qCount >= totalQuestions) return finishGame();
+        let a, b, target;
+        if (mode === "easy") {
+          a = Math.floor(Math.random() * 9) + 2;
+          b = 1;
+          currentCorrect = a - b;
+          questionButton.textContent = `${a} - ${b}`;
+        } else if (mode === "hard") {
+          a = Math.floor(Math.random() * 10) + 1;
+          b = Math.floor(Math.random() * a) + 1;
+          currentCorrect = a - b;
+          questionButton.textContent = `${a} - ${b}`;
+        } else {
+          target = mode === "easyBonds" ? 5 : Math.floor(Math.random() * 5) + 5;
+          if (Math.random() < 0.5) {
+            a = Math.floor(Math.random() * (target - 1)) + 1;
+            currentCorrect = target - a;
+            questionButton.textContent = `${a} + ? = ${target}`;
+          } else {
+            b = Math.floor(Math.random() * (target - 1)) + 1;
+            currentCorrect = target - b;
+            questionButton.textContent = `? + ${b} = ${target}`;
+          }
+        }
+        const pool = Array.from({ length: 11 }, (_, i) => i).filter(i => i !== currentCorrect);
+        const choices = [currentCorrect, pool.pop(), pool.pop()].sort(() => Math.random() - 0.5);
+        ans.forEach((b, i) => { b.textContent = choices[i]; b.disabled = false; });
+      }
+
+      function checkAnswer(val) {
+        if (val === currentCorrect) {
+          totalCorrect++; qCount++;
+          generateQuestion();
+        } else {
+          totalWrong++;
+          wrong.currentTime = 0; wrong.play();
+        }
+      }
+
+      const ans = [
+        document.getElementById("answer1"),
+        document.getElementById("answer2"),
+        document.getElementById("answer3")
+      ];
+      ans.forEach(b => b.addEventListener("click", () => checkAnswer(parseInt(b.textContent, 10))));
+    </script>
+</body>
+</html>
